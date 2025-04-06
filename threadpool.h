@@ -12,16 +12,16 @@
 template <typename T>
 class threadpool{
     private:
-        int thread_number_;
-        pthread_t * threads_;
-        int max_requests_;
+        int thread_number_;             //工作线程数量
+        pthread_t * threads_;           //预分配的线程池指针
+        int max_requests_;              //支持的最大请求数量
         locker queue_locker_;
-        sem queue_status_;
-        bool thread_stop_;
-        std::list<T *> work_queue_;
+        sem queue_status_;      
+        bool thread_stop_;              //发出信号，显示线程池是否停止
+        std::list<T *> work_queue_;     //请求队列
     
     private:
-        static void* worker(void* arg);
+        static void* worker(void* arg);     //创建线程的工作函数
         void run();
 
     public:
@@ -46,7 +46,7 @@ threadpool<T>::threadpool(int thread_number, int max_requests):
         for(int i = 0; i < thread_number; i++){
             printf("created the %dth thread.\n", i + 1);
             if(pthread_create(threads_ + i, NULL, worker, this) != 0){
-                delete [] threads_;
+                delete [] threads_;         //对于异常的处理比较强硬，是否有更好的方法处理呢？
                 throw std::exception();
             }
 
@@ -72,7 +72,8 @@ bool threadpool<T>::append(T *request){
     }
 
     work_queue_.push_back(request);
-    work_queue_.unique();
+    work_queue_.unlock();
+    queue_status_.post();   //保证在线程在取请求的同步关系
     return true;
 }
 
