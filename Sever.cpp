@@ -1,9 +1,8 @@
 #include "threadpool.h"
 #include "http.h"
-#include <asm-generic/errno-base.h>
-#include <asm-generic/socket.h>
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <list>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -21,6 +20,7 @@
 #define MAX_EVENTS 10000
 
 extern void addfd(int , int , bool );
+extern void removfd(int , int);
 
 int main(int argc, char * argv[]){
     
@@ -38,19 +38,20 @@ int main(int argc, char * argv[]){
 
     http_conn* users = new http_conn[MAX_FD];   //
     
-    struct sockaddr_in serv_sock, client_addr;
+    struct sockaddr_in serv_addr, client_addr;
     socklen_t client_addr_sz;
 
     int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(atoi(argv[1]));
+    serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    serv_sock.sin_family = AF_INET;
-    serv_sock.sin_port = htons(atoi(argv[1]));
-    serv_sock.sin_addr.s_addr = htonl(INADDR_ANY);
-
-    //设置地址复用
+    //设置地址和端口q复用
     int reuse = true;
     setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, (void *)&reuse, sizeof(reuse));
-    if(bind(listenfd, (struct sockaddr *)&serv_sock, sizeof(serv_sock)) == -1){
+    if(bind(listenfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1){
         perror("bind error.");
         exit(-1);
     }
@@ -59,7 +60,8 @@ int main(int argc, char * argv[]){
         perror("bind error.");
         exit(-1);
     }
-
+    
+    //设置epoll标志
     int epollfd = epoll_create(MAX_EVENTS);
     epoll_event* events = new epoll_event[MAX_EVENTS];
     
@@ -70,7 +72,7 @@ int main(int argc, char * argv[]){
         int ready_num = epoll_wait(epollfd, events, MAX_EVENTS, -1);
 
         //EINTR：read manual
-        if((ready_num < 0) || (errno != EINTR)){
+        if((ready_num < 0) && (errno != EINTR)){
             perror("epoll_wait error.");
             break;
         }
@@ -79,6 +81,7 @@ int main(int argc, char * argv[]){
             int sockfd = events[i].data.fd;
 
             if(sockfd == listenfd){
+                client_addr_sz = sizeof(client_addr);
                 int connfd = accept(listenfd, (struct sockaddr *)&client_addr, &client_addr_sz);
                 
                 if(connfd < 0){
@@ -96,7 +99,8 @@ int main(int argc, char * argv[]){
                 users[sockfd].close_conn();
             }else if(events[i].events & EPOLLIN){
                 if(users[sockfd].read())
-                    pool->append(users + sockfd);
+                    pool->append(users + sockfd);       //这里直接使用创建的文件描述符作为数组下标
+                                                        //要注意的是，linux系统中用户可用的第一个描述符为3
                 else
                     users[sockfd].close_conn();
 
@@ -116,6 +120,7 @@ int main(int argc, char * argv[]){
 
     return 0;
 }
+
 
 
 
