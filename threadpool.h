@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <list>
 #include "locker.h"
+#include "http.h"
 
 
 template <typename T>
@@ -72,7 +73,7 @@ bool threadpool<T>::append(T *request){
     }
 
     work_queue_.push_back(request);
-    work_queue_.unlock();
+    queue_locker_.unlock();
     queue_status_.post();   //保证在线程在取请求的同步关系
     return true;
 }
