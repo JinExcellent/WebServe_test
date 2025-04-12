@@ -139,8 +139,8 @@ http_conn::LINE_STATUS http_conn::parse_line(){
             }
             return LINE_BAD;
         }else if(temp == '\n'){
-            if((checked_index_ > 1) && (read_buf_[checked_index_ - 1] == '\0')){
-                read_buf_[checked_index_++] = '\0';
+            if((checked_index_ > 1) && (read_buf_[checked_index_ - 1] == '\r')){
+                read_buf_[checked_index_-1] = '\0';
                 read_buf_[checked_index_++] = '\0';
                 return LINE_OK;
             }
@@ -188,32 +188,39 @@ http_conn::HTTP_CODE http_conn::parse_content(char *text){
 
 http_conn::HTTP_CODE http_conn::parse_request_line(char *text){ 
     url_ = strpbrk(text, " \t"); 
-    if(!url_) 
+    if(!url_){ 
+        printf("url_ error\n"); 
         return BAD_REQUEST;
+    }
 
     *url_++ = '\0';     //(*url_)++ = '\0' 分清这两个语句之间的语序
     char* method = text;
     if(strcasecmp(method, "GET")== 0){
         method_ = GET;
     }else {
+        printf("method_ error\n");
         return BAD_REQUEST;
     }
 
     version_ = strpbrk(url_, " \t");
-    if(version_) 
+    if(!version_){ 
+        printf("version_ error_line\n");
         return BAD_REQUEST;
-
+    }
     *version_++ = '\0';
-    if(strcasecmp(version_, "HTTP/1.1") != 0)
+    if(strcasecmp(version_, "HTTP/1.1") != 0){
+        printf("version_error_line\n");
         return BAD_REQUEST;
+    }
 
     if(strncasecmp(url_, "http://", 7) == 0){ //**********************************
         url_ += 7;
         url_ = strchr(url_, '/');
     }
-    if(!url_ || url_[0] != '/')
+    if(!url_ || url_[0] != '/'){
+        printf("resource error\n");
         return BAD_REQUEST;
-
+    }
     check_state_ = CHECK_STATE_HEADER;      //处理完头部后检查请求状态
     return NO_REQUEST;
 }
@@ -231,14 +238,18 @@ http_conn::HTTP_CODE http_conn::process_read(){
         switch (check_state_) {
             case CHECK_STATE_REQUESTLINE: {
                 ret = parse_request_line(text);
-                if(ret == BAD_REQUEST) 
+                if(ret == BAD_REQUEST){
+                    printf("process requestline error\n");
                     return BAD_REQUEST;
+                }
                 break;
             }
             case CHECK_STATE_HEADER:{
                 ret = parse_headers(text);
-                if(ret == BAD_REQUEST)
+                if(ret == BAD_REQUEST){
+                    printf("process header error\n");
                     return BAD_REQUEST;
+                }
                 else if(ret == GET_REQUEST)
                     return do_request();
                 break;
@@ -262,7 +273,7 @@ http_conn::HTTP_CODE http_conn::process_read(){
 http_conn::HTTP_CODE http_conn::do_request(){
     strcpy(real_file_, doc_root);
     int len = strlen(doc_root);
-    strncpy(real_file_, url_, FILENAME_LEN - len - 1);
+    strncpy(real_file_ + len, url_, FILENAME_LEN - len - 1);
 
     if(stat(real_file_, &file_stat_) < 0){
         return NO_RESOURCE;
