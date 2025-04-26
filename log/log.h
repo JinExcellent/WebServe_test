@@ -16,7 +16,7 @@ class log{
         int log_buf_size_;
         long long count_;
         int today_;
-        FILE* fp_;
+        FILE* fp_;                                       //日志文件描述符
         char* buf_;
         block_queue<std::string> *log_queue_;            //阻塞队列
         bool is_async_;                                  //异步标志位
@@ -25,11 +25,11 @@ class log{
 
     private:
         log();
-        virtual ~log();              //这里使用虚函数的用意？*********
-        inline void *async_write_log(){
+        virtual ~log();                                 //这里使用虚函数的用意？*********
+        inline void *async_write_log(){                 //将一条日志记录从阻塞队列中拿出，写到日志文件中
             std::string single_log;
 
-            while (log_queue -> pop(single_log)) {
+            while (log_queue_ -> pop(single_log)) {
                 mutex_.lock();
                 fputs(single_log.c_str(), fp_);
                 mutex_.unlock();
@@ -37,7 +37,7 @@ class log{
         }
 
     public:
-        static log *get_instance(){
+        static log *get_instance(){                     //使用懒汉式的单例模式
             static log instance;
             return &instance;
         }
@@ -60,18 +60,3 @@ class log{
 #define LOG_ERROR(format, ...) if(0 == close_log_){log::get_instance() -> write_log(3, format, ##__VA_ARGS__);log::get_instance -> flush();}
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -57,7 +57,8 @@ class cond{
             ret = pthread_cond_wait(&cond_, mutex_);
             return ret == 0;
         }
-
+        
+        //使用条件变量
         bool timewait(pthread_mutex_t *mutex_, struct timespec t){
             int ret = 0;
             ret = pthread_cond_timedwait(&cond_, mutex_, &t);
@@ -98,23 +99,3 @@ class sem{
 };
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

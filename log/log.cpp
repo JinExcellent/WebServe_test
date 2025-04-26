@@ -31,7 +31,6 @@ bool log::init(const char *file_name, int close_log, int log_buf_size, int split
 
         //创建子线程用于异步写日志
         pthread_create(&tid, NULL, flush_log_thread, NULL);
-
     }
 
     close_log_ = close_log;
@@ -47,13 +46,14 @@ bool log::init(const char *file_name, int close_log, int log_buf_size, int split
 
     const char *p = strrchr(file_name, '/');
     char log_full_name[256] = {0};
-
+    
+    //如果没有找到/，自定义文件名（使用日期加文件名）
     if(p == NULL){
         //这里的tm_year保存到的是年份的偏移量，故需要加1900（这个结构中的变量是从1900开始计算年份），月份加一是因为这个变量是从零开始计数
         snprintf(log_full_name, 255, "%d_%02d_%02d_%s", my_tm.tm_year + 1900, my_tm.tm_mon + 1, my_tm.tm_mday, file_name);
     }else{
         strcpy(log_name, p + 1);
-        strncpy(dir_name, file_name, p - file_name + 1);
+        strncpy(dir_name, file_name, p - file_name + 1);            //将目录路径写入dir_name变量中
         snprintf(log_full_name, 255, "%s%d_%02d_%02d_%s",dir_name, my_tm.tm_year + 1900, my_tm.tm_mon + 1, my_tm.tm_mday, log_name);
     }
 
@@ -110,7 +110,7 @@ void log::write_log(int level, const char *format, ...){
             today_ = my_tm.tm_mday;
             count_ = 0;
         }else {
-        //如果是超出了单个文件规定的行数，则创意建一个新文件并带上文件分割后缀 （count_ / split_lines_）
+        //如果是超出了单个文件规定的行数，则创建一个新文件并带上文件分割后缀 （count_ / split_lines_）
             snprintf(new_log, 255, "%s%s%s.%lld", dir_name, tail, log_name, count_ / split_lines_);   
         }
         fp_ = fopen(new_log, "a");
@@ -147,37 +147,3 @@ void log::flush(){
     fflush(fp_);
     mutex_.unlock();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

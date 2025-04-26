@@ -448,7 +448,7 @@ bool http_conn::write(){
 
         if(bytes_have_send >= iv_[0].iov_len){
             iv_[0].iov_len = 0;
-            iv_[1].iov_base = file_address_ + (bytes_have_send - write_index_);
+            iv_[1].iov_base = file_address_ + (bytes_have_send - write_index_);     //****************************
             iv_[1].iov_len = bytes_to_send;
         }else{
             iv_[0].iov_base = write_buf_ + bytes_have_send;
@@ -467,16 +467,3 @@ bool http_conn::write(){
         }
    }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

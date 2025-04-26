@@ -78,6 +78,7 @@ bool threadpool<T>::append(T *request){
     return true;
 }
 
+//要直到这里的worker函数为什么是静态类型的函数
 template<typename T>
 void* threadpool<T>::worker(void * arg){
     threadpool * pool = (threadpool *)arg;
@@ -107,38 +108,4 @@ void threadpool<T>::run(){
     }
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif

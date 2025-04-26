@@ -157,7 +157,7 @@ class block_queue{
                 //这里的timeout保存的是毫秒部分，需要转换为秒
                 t.tv_sec = now.tv_sec + timeout / 1000;
                 //将timeout中剩余的毫秒转化为纳秒
-                t.tv_nsec = (timeout % 1000) * 1000;
+                t.tv_nsec = (timeout % 1000) * 1000;        //这里是否有错误？ 转换为纳秒应该是*1 000 000
                 
                 if(!cond_.timewait(mutex_.get(), t)){
                     mutex_.unlock();
@@ -165,7 +165,7 @@ class block_queue{
                 }
             }
 
-            //第二次检测用于防止虚假唤醒
+            //第二次检测用于防止虚假唤醒（这书虚假唤醒处理的第二种方式）
             if(size_ <= 0){
                 mutex_.unlock();
                 return false;

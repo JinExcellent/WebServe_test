@@ -63,17 +63,19 @@ class http_conn{
         CHECK_STATE check_state_;                   //主状态机当前所处的状态
         METHOD method_;                             //请求方法
         
+        //请求报文的头部信息
         char* url_;
         char* version_;
         char* host_;
         int content_length_;
         bool linger_;
         char real_file_[FILENAME_LEN];
-
+        
+        //
         char write_buf_[WRITE_BUFFER_SIZE];
         int write_index_;                           //
         char* file_address_;                        //资源文件被映射到内存中位置
-        struct stat file_stat_;
+        struct stat file_stat_;                     //描述文件信息的结构体 
         struct iovec iv_[2];                        //使用writev来分离写（响应头部和数据内容分开写）
         int iv_count_;
 
@@ -84,8 +86,8 @@ class http_conn{
 
     
     public:
-        void init(int fd, sockaddr_in addr);
-        void init();
+        void init(int fd, sockaddr_in addr);        //描述符初始化
+        void init();                                //请求类中的数据初始化
         void close_conn();
         bool read();                                //非阻塞读
         bool write();                               //非阻塞写 
