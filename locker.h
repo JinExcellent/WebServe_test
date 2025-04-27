@@ -84,7 +84,11 @@ class sem{
             throw std::exception();
         }
     }
-
+    sem(int num){
+        if(sem_init(&sem_, 0, num) != 0){
+            throw std::exception();
+        }    
+    }
     ~sem(){
         sem_destroy(&sem_);
     }
