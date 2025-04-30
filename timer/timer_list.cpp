@@ -140,7 +140,7 @@ void sort_timer_list::add_timer(util_timer *timer, util_timer *list_head){
 
 
 int timeout_process::epollfd_ = 0;
-int *timeout_process::u_pipefd = 0;
+int *timeout_process::pipefd_ = 0;
 
 class timeout_process;      //这是是为了允许在 cb_func 函数中使用 Utils 类的静态成员而设置的前向声明，而不是为了其他目的。
 
@@ -175,7 +175,7 @@ void timeout_process::addfd(int epollfd, int fd, bool one_shot, int TRIGMode){
 void timeout_process::sig_handler(int sig){
    int save_errno = errno;      //防止在多线程环境下其它线程改变了errno标志
    int msg = sig;
-   send(u_pipefd[1], (char *)&msg, 1, 0);
+   send(pipefd_[1], (char *)&msg, 1, 0);
    errno = save_errno;
 }
 

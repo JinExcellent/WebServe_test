@@ -21,7 +21,6 @@ class util_timer{
     public:
         time_t expire;
 
-    public:
         void (*cb_func)(client_data *);         //超时处理的函数指针
         client_data *user_data;
         util_timer *prev;
@@ -49,7 +48,7 @@ class sort_timer_list{
 //超时处理操作
 class timeout_process{
     public:
-        static int *u_pipefd;       //socketpipe 
+        static int *pipefd_;       //socketpipe 
         sort_timer_list timer_list_;
         static int epollfd_;
         int TIMESLOT_;              //定时基值
@@ -70,5 +69,7 @@ class timeout_process{
         void timer_handler();
         void show_error(int connfd, const char *info);
 };
+
+void cb_func(client_data *user_data);
 
 #endif

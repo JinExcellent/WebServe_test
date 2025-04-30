@@ -4,9 +4,16 @@
 #include <cstdio>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <string>
 #include <sys/epoll.h>
 #include <unistd.h>
 #include <string.h>
+#include <mysql/mysql.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include "./mysql/sql_connection_pool.h"
+
 
 class http_conn{
     public:
@@ -28,7 +35,7 @@ class http_conn{
         
          enum CHECK_STATE {CHECK_STATE_REQUESTLINE = 0, CHECK_STATE_HEADER, CHECK_STATE_CONTENT};
 
-         /*服务器在处理请求时可能会出现的结果：
+         /*HTTTP_CODE服务器在处理请求时可能会出现的结果：
           *
           *  NO_REQUEST:        :请求数据不完整，需要继续读取客户数据
           *  GET_REQUEST        :获取了一个完整的客户请求数据包
@@ -50,7 +57,20 @@ class http_conn{
          
          static int epollfd_;                        //被所有socket上的事件
          static int epollfd_count_;                  //用户数量
+         
+         MYSQL *mysql_;
+         int state_;                                 //读写标志(0读1写)
+         
+         int improv_;
+        /**
+        improv 变量被用来标记连接状态是否有改进，主要用于线程池中的任务处理逻辑：
 
+如果连接处理有进展（如成功读到数据或完成写入），improv 会被设置为 1，表示连接的状态已经被成功处理。
+在 threadpool 的 run 方法中，improv 会被用来判断是否需要继续处理该任务，或者可以结束当前任务。
+在 webserver.cpp 的 dealwithread 和 dealwithwrite 中也会结合 improv 的值来决定后续操作。
+        **/
+         int timer_flag_;                            //定时器开启标志(1:off,0:on)
+    
     private:
         int sockfd_;
         sockaddr_in addr_;
@@ -82,13 +102,22 @@ class http_conn{
         int bytes_to_send;                          //将要发送的数据字节数
         int bytes_have_send;                        //已经发送的字节数
 
+        char sql_name_[100];
+        char sql_user_[100];
+        char sql_passwd[100];
 
 
-    
+        //新添加的但不知放在何处
+        int TRIGMode_;
+        int close_log_;
+        char *doc_root_;
+        int cgi_;            //是否启用POST
+        char *string_;       //储存请求头数据
+
     public:
-        void init(int fd, sockaddr_in addr);        //描述符初始化
+        void init(int fd, sockaddr_in addr, char *, int , int , std::string user, std::string passwd, std::string sqlname);        //初始化
         void init();                                //请求类中的数据初始化
-        void close_conn();
+        void close_conn(bool real_close = true);
         bool read();                                //非阻塞读
         bool write();                               //非阻塞写 
         HTTP_CODE process_read();                   //解析http请求
@@ -112,6 +141,8 @@ class http_conn{
         bool add_linger();
         bool add_blank_line();
         
+        void initmysql_result(connection_pool *connPool);
+        inline sockaddr_in *get_address(){return &addr_;}
 
 };
 #endif

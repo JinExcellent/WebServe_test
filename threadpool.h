@@ -8,6 +8,7 @@
 #include <list>
 #include "locker.h"
 #include "http.h"
+#include "mysql/sql_connection_pool.h"
 
 
 template <typename T>
@@ -20,21 +21,22 @@ class threadpool{
         sem queue_status_;      
         bool thread_stop_;              //发出信号，显示线程池是否停止
         std::list<T *> work_queue_;     //请求队列
-    
+        connection_pool *connpool_;      //数据库连接池
+        int actor_model_;               //模型切换
+
     private:
         static void* worker(void* arg);     //创建线程的工作函数
         void run();
 
     public:
-        threadpool(int thread_number = 8, int max_requests = 10000);
+        threadpool(int actor_model, connection_pool *connpool, int thread_number = 8, int max_requests = 10000);
         ~threadpool();
         bool append(T * request);
+        bool append(T * request, int state);
 };
 
 template <typename T>
-threadpool<T>::threadpool(int thread_number, int max_requests):
-    thread_number_(thread_number), max_requests_(max_requests),
-    thread_stop_(false), threads_(NULL){
+threadpool<T>::threadpool(int actor_model, connection_pool *connpool, int thread_number, int max_requests): actor_model_(actor_model), thread_number_(thread_number), max_requests_(max_requests), thread_stop_(false), threads_(NULL), connpool_(connpool){
         if((thread_number <= 0) || (max_requests <= 0)){
             throw std::exception();
         }
@@ -64,6 +66,23 @@ threadpool<T>::~threadpool(){
     thread_stop_ = true;
 }
 
+//Reactor
+template<typename T>
+bool threadpool<T>::append(T *request, int state){
+    queue_locker_.lock();
+    if(work_queue_.size() >= max_requests_){
+        queue_locker_.unlock();
+        return false;
+    }
+    request->state_ = state;
+    work_queue_.push_back(request);
+    queue_locker_.unlock();
+    queue_status_.post();
+
+    return true;
+}
+
+//Proactor
 template<typename T>
 bool threadpool<T>::append(T *request){
     queue_locker_.lock();
@@ -75,10 +94,11 @@ bool threadpool<T>::append(T *request){
     work_queue_.push_back(request);
     queue_locker_.unlock();
     queue_status_.post();   //保证在线程在取请求的同步关系
+    
     return true;
 }
 
-//要直到这里的worker函数为什么是静态类型的函数
+//要清楚这里的worker函数为什么是静态类型的函数
 template<typename T>
 void* threadpool<T>::worker(void * arg){
     threadpool * pool = (threadpool *)arg;
@@ -101,11 +121,33 @@ void threadpool<T>::run(){
         work_queue_.pop_front();
         queue_locker_.unlock();
         
-        if(!request){
+        if(!request)
             continue;
+        //根据actor_model选用不同的io复用模型
+        if(actor_model_ == 1){
+            //state_用于区分读写操作
+            if(request->state_ == 0){
+                if(request->read()){
+                    request->improv_ = 1;
+                    //创建数据库实例并初始化
+                    connectionRALL mysqlcon(&request->mysql_, connpool_);
+                    request->process();
+                }else{
+                    request->improv_ = 1;
+                    request->timer_flag_ = 1;
+                }
+            }else{
+                if(request->write()){
+                    request->improv_ = 1;
+                }else{
+                    request->improv_ = 1;
+                    request->timer_falg_ = 1;
+                }
+            }
+        }else{
+            connectionRALL mysqlcon(&request->mysql_, connpool_);
+            request->process();
         }
-        request -> process();
     }
-
 }
 #endif
