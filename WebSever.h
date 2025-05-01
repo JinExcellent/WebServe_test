@@ -19,7 +19,7 @@ class WebServer{
         int port_;              //端口号
         char *root_;            //文件资源路径
         int log_write_;
-        int close_log_;         //是否开始日志
+        int close_log_;         //是否开启日志
         int actor_model_;       //服务器并发模式
         
         int pipefd_[2];
