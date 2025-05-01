@@ -141,7 +141,7 @@ void threadpool<T>::run(){
                     request->improv_ = 1;
                 }else{
                     request->improv_ = 1;
-                    request->timer_falg_ = 1;
+                    request->timer_flag_ = 1;
                 }
             }
         }else{
