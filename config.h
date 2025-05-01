@@ -6,7 +6,7 @@
 class config{
     public:
         config();
-        ~config();
+        ~config() {}
         void parse_arg(int argc, char *argv[]);
     
     public:
