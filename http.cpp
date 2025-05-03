@@ -84,7 +84,8 @@ void addfd(int epollfd, int fd, bool one_shot){
     epoll_event event;
     event.data.fd = fd;
     event.events = EPOLLIN | EPOLLRDHUP;
-
+    
+    //监听描述符不需要设置，因为该描述符需要被多个工作线程进行访问
     if(one_shot){
         //避免同一个通信被不同的线程处理
         event.events |= EPOLLONESHOT;
@@ -592,6 +593,8 @@ bool http_conn::read(){
    //LT模式
    if(TRIGMode_ == 0){
         bytes_read = recv(sockfd_, read_buf_ + read_index_, READ_BUFFER_SIZE - read_index_, 0);
+        read_index_ += bytes_read;
+
         if(bytes_read <= 0)
             return false;
         
