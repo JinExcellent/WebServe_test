@@ -5,7 +5,24 @@
 #include "mysql/sql_connection_pool.h"
 #include "threadpool.h"
 #include "./timer/timer_list.h"
+#include "log/log.h"
+#include "timer/timer_list.h"
 #include <netinet/in.h>
+#include <asm-generic/errno-base.h>
+#include <asm-generic/socket.h>
+#include <bits/types/cookie_io_functions_t.h>
+#include <bits/types/time_t.h>
+#include <cassert>
+#include <cstddef>
+#include <cstring>
+#include <ctime>
+#include <cwchar>
+#include <netinet/in.h>
+#include <sys/epoll.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <string.h>
+#include <signal.h>
 #include <sys/epoll.h>
 
 const int MAX_FD = 65535;               //最大文件描述符
@@ -42,7 +59,7 @@ class WebServer{
 
         //定时器相关
         client_data *users_timer_;
-        timeout_process timeout_;        //超时处理的定时器
+        timeout_process timeout_;        //定时器链表
 
         int listenfd_;
         int OPT_LINGER_;

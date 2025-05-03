@@ -1,11 +1,21 @@
 #ifndef TIMER_LIST_H_
 #define TIMER_LIST_H_
 
+#include "../http.h"
+#include "../log/log.h"
+#include "../log/block_queue.h"
 #include <bits/types/time_t.h>
-#include <ctime>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <cassert>
+#include <cerrno>
+#include <csignal>
+#include <cstring>
+#include <ctime>
+#include <fcntl.h>
+#include <sys/epoll.h>
+
 
 class util_timer;
 
@@ -19,7 +29,7 @@ struct client_data{
 //定时器节点
 class util_timer{
     public:
-        time_t expire;
+        time_t expire;                          //超时时间
 
         void (*cb_func)(client_data *);         //超时处理的函数指针
         client_data *user_data;
@@ -54,8 +64,8 @@ class timeout_process{
         int TIMESLOT_;              //定时基值
 
     public:
-        timeout_process();
-        ~timeout_process();
+        timeout_process(){};
+        ~timeout_process(){};
 
         void init(int timeslot);
         int setnonblocking(int fd);
