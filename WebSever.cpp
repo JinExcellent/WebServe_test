@@ -1,24 +1,4 @@
 #include "WebSever.h"
-#include "http.h"
-#include "log/log.h"
-#include "mysql/sql_connection_pool.h"
-#include "threadpool.h"
-#include "timer/timer_list.h"
-#include <asm-generic/errno-base.h>
-#include <asm-generic/socket.h>
-#include <bits/types/cookie_io_functions_t.h>
-#include <bits/types/time_t.h>
-#include <cassert>
-#include <cstddef>
-#include <cstring>
-#include <ctime>
-#include <cwchar>
-#include <netinet/in.h>
-#include <sys/epoll.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#include <string.h>
-#include <signal.h>
 
 WebServer::WebServer(){
     //申请用户请求队列空间
@@ -120,7 +100,6 @@ void WebServer::eventListen(){
     sever_addr.sin_family = AF_INET;
     sever_addr.sin_port = htons(port_);
     sever_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-
     //地址端口号复用
     int flag = 1;
     setsockopt(listenfd_, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
@@ -150,7 +129,6 @@ void WebServer::eventListen(){
     timeout_.addsig(SIGPIPE, SIG_IGN);
     timeout_.addsig(SIGALRM, timeout_.sig_handler, false);
     timeout_.addsig(SIGTERM, timeout_.sig_handler, false);
-
     //定时
     alarm(TIMESLOT);
 
@@ -161,7 +139,7 @@ void WebServer::eventListen(){
 
 void WebServer::timer(int connfd, struct sockaddr_in client_address){
    //初始化连接队列中（使用连接描述符作为索引）每一个用户的http连接
-   users[connfd].init(connfd, client_address, root_, CONNTrigmode_, close_log_, username_, password_, databasename_);
+    users[connfd].init(connfd, client_address, root_, CONNTrigmode_, close_log_, username_, password_, databasename_);
 
    //初始化定时队列中用户的数据结构
     users_timer_[connfd].address = client_address;
@@ -362,7 +340,8 @@ void WebServer::eventLoop(){
                dealwithwrite(sockfd);
         }
         //由于对于节点的处理优先级较低，故放在最后
-        if(timeout){
+        //if(timeout){
+        if(0){
             timeout_.timer_handler(); 
             LOG_INFO("%s", "deal with timeout clocks");
 

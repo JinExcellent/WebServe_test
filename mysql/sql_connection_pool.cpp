@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <mysql/mysql.h>
+#include <unistd.h>
 
 connection_pool::connection_pool(){
     CurConn_ = 0;
@@ -34,7 +35,9 @@ void connection_pool::init(string url, string User, string PassWord, string DBNa
         con = mysql_real_connect(con, url_.c_str(), user_.c_str(), password_.c_str(), DatabaseName_.c_str(), Port, NULL, 0);
         
         if(con == NULL){
+            fprintf(stderr, "Connection failed: %s\n", mysql_error(con));
             LOG_ERROR("MYSQL Error");
+            sleep(2);
             exit(1);
         }
         ConnList_.push_back(con);            //数据库连接放入连接池中

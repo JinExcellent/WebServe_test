@@ -1,13 +1,4 @@
 #include "timer_list.h"
-#include "../http.h"
-#include <cassert>
-#include <cerrno>
-#include <csignal>
-#include <cstring>
-#include <ctime>
-#include <fcntl.h>
-#include <sys/epoll.h>
-#include <unistd.h>
 
 sort_timer_list::sort_timer_list(){
     head = NULL;
@@ -27,8 +18,10 @@ sort_timer_list::~sort_timer_list(){
 void sort_timer_list::add_timer(util_timer *timer){
     if(!timer)
         return;
-    if(!head)
+    if(!head){
+        head = tail = timer;
         return;
+    }
     if(timer->expire < head->expire){
         timer->next = head;
         head->prev = timer;
