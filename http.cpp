@@ -34,7 +34,7 @@ const char* error_404_form = "The requested file was not found on this server.\n
 const char* error_500_title = "Internal Error";
 const char* error_500_form = "There was an unusual problem serving the requested file.\n";
 
-const char * doc_root = "/home/jin/WebServe_test/resource";          //服务器文件目录
+const char * doc_root = "/home/jin/WebServe_test/root";          //服务器文件目录
 
 int http_conn::epollfd_ = -1;
 int http_conn::epollfd_count_ = 0;
@@ -156,7 +156,7 @@ void http_conn::init(){
     mysql_ = NULL;
     cgi_ = 0;
     state_ = 0;
-    timer_flag_ = 0;
+    timer_flag_ = 0;        //该标志表示是否处理该链接节点（在定时队列中删除这个结点）
     improv_ = 0;
 
     memset(read_buf_, 0, READ_BUFFER_SIZE);
@@ -267,7 +267,10 @@ http_conn::HTTP_CODE http_conn::parse_request_line(char *text){
     char* method = text;
     if(strcasecmp(method, "GET")== 0){
         method_ = GET;
-    }else {
+    }else if(strcasecmp(method, "POST") == 0){
+        method_ = POST;
+        cgi_ = 1;
+    }else{
         printf("method_ error\n");
         return BAD_REQUEST;
     }

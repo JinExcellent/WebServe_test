@@ -326,8 +326,8 @@ void WebServer::eventLoop(){
            }
            else if(events_[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)){
                //关闭服务端连接，删除对应的定时器节点
-               util_timer *timer = users_timer_[i].timer;
-               deal_timer(timer, sockfd);
+               //util_timer *timer = users_timer_[i].timer;
+               //deal_timer(timer, sockfd);
            }
            else if((sockfd == pipefd_[0]) && (events_[i].events & EPOLLIN)){
                 bool flag = dealwithsignal(timeout, stop_server);
